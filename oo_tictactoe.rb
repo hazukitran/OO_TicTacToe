@@ -38,14 +38,6 @@ class Board
     @board[position] = marker
   end
 
-  def check_winner
-    WINNING_LINES.each do |pattern|
-      return "#{human.name}" if @board.values_at(*pattern).count("X") == 3
-      return "#{computer.name}" if @board.values_at(*pattern).count("O") == 3
-    end
-    nil
-  end
-
   def winning_moves(board, marker)
     WINNING_LINES.each do |pattern|
       if @board.values_at(*pattern).count(marker) == 2 && @board.values_at(*pattern).count(" ") == 1
@@ -57,6 +49,13 @@ class Board
       end 
     end
     false
+  end
+
+  def count_markers(marker)
+    WINNING_LINES.each do |pattern|
+      @board.values_at(*pattern).count(marker) == 3
+    end
+    nil
   end
 
 end
@@ -83,7 +82,7 @@ class Computer
   attr_accessor :name, :position, :marker
   
   def initialize
-    @name = "Mr.Robot"
+    @name = "Mr.Computer"
     @position = position
     @marker = "O"
   end
@@ -98,6 +97,12 @@ class TicTacToe
     @human = Human.new
     @computer = Computer.new
     @board = Board.new
+  end
+
+
+  def check_winner
+    return "Human" if board.count_markers(human.marker)
+    return "Computer" if board.count_markers(computer.marker)
   end
 
   def set_marker
@@ -127,18 +132,20 @@ class TicTacToe
   end
 
   def play
-    board.draw
-    set_marker
-    begin
+    loop do
+      board.draw
+      set_marker
       loop do
         human_move
-        computer_move unless board.check_winner
+        computer_move unless check_winner
         board.draw
-        break if board.check_winner || board.board_full?
+        break if check_winner || board.board_full?
       end
 
-      if board.check_winner
-        puts "The winner is #{board.check_winner}."
+      if check_winner == "Human"
+        puts "Congrats! #{human.name} wins this round."
+      elsif check_winner == "Computer"
+        puts "Sorry! #{computer.name} wins this round. "
       else
         puts "It's a draw."
       end
