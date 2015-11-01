@@ -71,14 +71,9 @@ class Human
     @position = position
   end
 
-  def name
+  def get_name
     puts "Enter your name: "
     @name = gets.chomp
-  end
-
-  def marker
-    puts "Pick any character except 'O': "
-    @marker = gets.chomp
   end
 
 end
@@ -105,10 +100,15 @@ class TicTacToe
     @board = Board.new
   end
 
+  def set_marker
+    puts "Pick 1 character, any character except 'O': "
+    human.marker = gets.chomp
+  end
+
   def computer_move
     unless board.winning_moves(board, computer.marker) || board.winning_moves(board, human.marker)
       position = board.available_positions.sample
-      board.mark_square(position, @marker)
+      board.mark_square(position, computer.marker)
     end
   end
 
@@ -117,7 +117,7 @@ class TicTacToe
       puts "Pick a position: #{board.available_positions}"
       position = gets.chomp.to_i
     end until board.available_positions.include?(position)
-    board.mark_square(position, @marker)
+    board.mark_square(position, human.marker)
 
   end
 
@@ -128,6 +128,7 @@ class TicTacToe
 
   def play
     board.draw
+    set_marker
     begin
       loop do
         human_move
