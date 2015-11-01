@@ -1,12 +1,14 @@
 require 'pry'
 class Board
 
+  WINNING_LINES = [[1,2,3], [4,5,6], [7,8,9], [1,4,7], [2,5,8], [3,6,9], [1,5,9], [3,5,7]]
+
   attr_accessor :board, :marker
 
   def initialize
     @board = {}
     (1..9).each { |position| @board[position] = " " }
-    @value = marker
+    @marker = marker
   end
 
   def draw
@@ -32,25 +34,51 @@ class Board
     available_positions.size == 0
   end
 
+  def mark_square(position, marker)
+    @board[position] = marker
+  end
+
+  def check_winner
+    WINNING_LINES.each do |pattern|
+      return "#{human.name}" if @board.values_at(*pattern).count("X") == 3
+      return "#{computer.name}" if @board.values_at(*pattern).count("O") == 3
+    end
+    nil
+  end
+
+  def winning_moves(board, marker)
+    WINNING_LINES.each do |pattern|
+      if @board.values_at(*pattern).count(marker) == 2 && @board.values_at(*pattern).count(" ") == 1
+        pattern.each do |position|
+          if @board[position] == " "
+            return @board[position] = "O"
+          end
+        end
+      end 
+    end
+    false
+  end
+
 end
 
 class Human
 
-  attr_accessor :name, :marker
+  attr_accessor :name, :marker, :position
 
   def initialize
     @name = name
     @marker = marker
+    @position = position
   end
 
   def name
     puts "Enter your name: "
-    gets.chomp
+    @name = gets.chomp
   end
 
   def marker
     puts "Pick any character except 'O': "
-    gets.chomp
+    @marker = gets.chomp
   end
 
 end
@@ -69,42 +97,18 @@ end
 
 class TicTacToe
 
-  WINNING_LINES = [[1,2,3], [4,5,6], [7,8,9], [1,4,7], [2,5,8], [3,6,9], [1,5,9], [3,5,7]]
-
   attr_accessor :human, :board, :computer
 
   def initialize
     @human = Human.new
     @computer = Computer.new
     @board = Board.new
-    @current_player = @human
-  end
-
-  def check_winner
-    WINNING_LINES.each do |pattern|
-      return "#{human.name}" if board.values_at(*pattern).count("X") == 3
-      return "#{computer.name}" if board.values_at(*pattern).count("O") == 3
-    end
-    nil
-  end
-
-  def winning_moves
-    TicTacToe::WINNING_LINES.each do |pattern|
-      if board.values_at(*pattern).count(symbol) == 2 && board.values_at(*pattern).count(" ") == 1
-        pattern.each do |position|
-          if board[position] == " "
-            return board[position] = "O"
-          end
-        end
-      end 
-    end
-    false
   end
 
   def computer_move
-    unless winning_moves(board, computer.marker) || winning_moves(board, human.marker)
+    unless board.winning_moves(board, computer.marker) || board.winning_moves(board, human.marker)
       position = board.available_positions.sample
-      board[position] = computer.marker
+      board.mark_square(position, @marker)
     end
   end
 
@@ -113,15 +117,8 @@ class TicTacToe
       puts "Pick a position: #{board.available_positions}"
       position = gets.chomp.to_i
     end until board.available_positions.include?(position)
-    board[position] = human.marker
-  end
+    board.mark_square(position, @marker)
 
-  def alternate_player
-    if @current_player == @human
-      human_move
-    else
-      computer_move
-    end
   end
 
   def play_again?
@@ -131,22 +128,21 @@ class TicTacToe
 
   def play
     board.draw
-    loop do
-      alternate_player
-      board.draw
-
-      if check_winner
-        puts "The winner is #{@current_player.name}!"
-        break
-      elsif board.board_full?
-        puts "It's a draw."
-        break
-      else
-        alternate_player
+    begin
+      loop do
+        human_move
+        computer_move unless board.check_winner
+        board.draw
+        break if board.check_winner || board.board_full?
       end
 
-      break if play_again?
+      if board.check_winner
+        puts "The winner is #{board.check_winner}."
+      else
+        puts "It's a draw."
+      end
 
+      exit if play_again?
     end
   end
 end
