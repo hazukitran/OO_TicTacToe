@@ -1,14 +1,25 @@
 require 'pry'
 class Board
 
-  WINNING_LINES = [[1,2,3], [4,5,6], [7,8,9], [1,4,7], [2,5,8], [3,6,9], [1,5,9], [3,5,7]]
+  WINNING_LINES = [ [1,2,3], 
+                    [4,5,6], 
+                    [7,8,9], 
+                    [1,4,7], 
+                    [2,5,8], 
+                    [3,6,9], 
+                    [1,5,9], 
+                    [3,5,7]]
 
-  attr_accessor :board, :marker
+  attr_reader :board, :marker
 
   def initialize
     @board = {}
     (1..9).each { |position| @board[position] = " " }
     @marker = marker
+  end
+
+  def reset
+    initialize
   end
 
   def draw
@@ -27,7 +38,7 @@ class Board
   end 
    
   def available_positions
-    board.select { |key, value| value == " "}.keys
+    board.select { |_, value| value == " "}.keys
   end
 
   def board_full?
@@ -38,7 +49,7 @@ class Board
     @board[position] = marker
   end
 
-  def winning_moves(board, marker)
+  def computer_smart_move(board, marker)
     WINNING_LINES.each do |pattern|
       if @board.values_at(*pattern).count(marker) == 2 && @board.values_at(*pattern).count(" ") == 1
         pattern.each do |position|
@@ -53,7 +64,7 @@ class Board
 
   def count_markers(marker)
     WINNING_LINES.each do |pattern|
-      @board.values_at(*pattern).count(marker) == 3
+      return true if @board.values_at(*pattern).count(marker) == 3
     end
     nil
   end
@@ -62,28 +73,16 @@ end
 
 class Human
 
-  attr_accessor :name, :marker, :position
-
-  def initialize
-    @name = name
-    @marker = marker
-    @position = position
-  end
-
-  def get_name
-    puts "Enter your name: "
-    @name = gets.chomp
-  end
+  attr_accessor :name, :marker
 
 end
 
 class Computer
 
-  attr_accessor :name, :position, :marker
+  attr_reader :name, :marker
   
   def initialize
     @name = "Mr.Computer"
-    @position = position
     @marker = "O"
   end
   
@@ -91,7 +90,7 @@ end
 
 class TicTacToe
 
-  attr_accessor :human, :board, :computer
+  attr_reader :human, :board, :computer
 
   def initialize
     @human = Human.new
@@ -99,19 +98,24 @@ class TicTacToe
     @board = Board.new
   end
 
-
   def check_winner
     return "Human" if board.count_markers(human.marker)
     return "Computer" if board.count_markers(computer.marker)
   end
 
-  def set_marker
-    puts "Pick 1 character, any character except 'O': "
-    human.marker = gets.chomp
+
+  def get_name
+    puts "Enter your name: "
+    human.name = gets.chomp
   end
 
-  def computer_move
-    unless board.winning_moves(board, computer.marker) || board.winning_moves(board, human.marker)
+  def set_marker
+    puts "Pick 1 character, any character except 'O': "
+    human.marker = gets[0]
+  end
+
+  def computer_regular_move
+    unless board.computer_smart_move(board, computer.marker) || board.computer_smart_move(board, human.marker)
       position = board.available_positions.sample
       board.mark_square(position, computer.marker)
     end
@@ -126,18 +130,14 @@ class TicTacToe
 
   end
 
-  def play_again?
-    puts "Play again? 'n' to quit "
-    gets.chomp.downcase == 'n'
-  end
-
   def play
+    get_name
+    set_marker
     loop do
       board.draw
-      set_marker
       loop do
         human_move
-        computer_move unless check_winner
+        computer_regular_move unless check_winner
         board.draw
         break if check_winner || board.board_full?
       end
@@ -149,8 +149,11 @@ class TicTacToe
       else
         puts "It's a draw."
       end
+      board.reset
 
-      exit if play_again?
+      puts "Play again? 'n' to quit "
+      break if gets.chomp.downcase == 'n'
+
     end
   end
 end
